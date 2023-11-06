@@ -1,25 +1,22 @@
 import { Collection, ObjectId } from "mongodb";
-import TodoType, {
+import {
 	AddTodoListDto,
 	ApiResponse,
 	TodoListType,
-} from "../models/todoModel";
+} from "../models/todoListModel";
+import TodoItem from "../models/todoItemModel";
 
-export default class TodoServices {
+export default class TodoListServices {
+	private itemsCollection: Collection<TodoItem>;
 	private todoListCollection: Collection<TodoListType>;
-	private todosCollection: Collection<TodoType>;
 
-	constructor(
-		todoBoardCollection: Collection<TodoListType>,
-		todosCollection: Collection<TodoType>
-	) {
-		this.todoListCollection = todoBoardCollection;
-		this.todosCollection = todosCollection;
-	}
+  constructor(itemsCollection: Collection<TodoItem>, todoListCollection: Collection<TodoListType>) {
+    this.itemsCollection = itemsCollection;
+    this.todoListCollection = todoListCollection;
+  }
 
 	public async GetTodoLists(): Promise<ApiResponse<Array<TodoListType>>> {
 		const result = await this.todoListCollection.find().toArray();
-
 		return { data: result, message: "", success: true };
 	}
 
@@ -28,6 +25,7 @@ export default class TodoServices {
 	): Promise<ApiResponse<TodoListType>> {
 		const data: TodoListType = {
 			name: dto.name,
+      description: dto.description
 		};
 
 		try {
@@ -45,9 +43,7 @@ export default class TodoServices {
 				}`,
 				success: true,
 			};
-		} catch (error) {
-			console.log(error);
-
+		} catch (_) {
 			return {
 				message: "failed to insert",
 			};
@@ -59,12 +55,14 @@ export default class TodoServices {
 
     try {
       const response = await this.todoListCollection.deleteOne({_id: deleteId});
+			await this.itemsCollection.deleteMany({listId: deleteId});
+
       return {
-        message: response.deletedCount > 0 ? 'Successfully deleted' : 'List not found',
+        message: response.deletedCount > 0 ? 'Successfully deleted the list and the items associated with it' : 'List not found',
         data: response.deletedCount > 0,
         success: response.deletedCount > 0,
       };
-    } catch (error) {
+    } catch (_) {
       return {
         message: 'Failed to delete the list with id: ' + deleteId,
       }
