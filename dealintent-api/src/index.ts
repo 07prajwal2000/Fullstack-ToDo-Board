@@ -10,6 +10,13 @@ config();
 const port = parseInt(GetEnv('PORT')) || 3001;
 const app = express();
 app.use(bodyParser.json())
+app.use((req, res, next) => {
+  next();
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+});
 initialize();
 
 app.listen(port, () =>
