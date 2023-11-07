@@ -1,18 +1,29 @@
-"use client";
+import TodoListApi from "@/api/todoList";
+import KanbanBoard from "@/components/KanbanBoard";
+import TodoItemApi from "@/api/todoItem";
+import { TodoItemType } from "@/types/todoItemType";
 
-import { useEffect } from "react";
-import useSWR from "swr";
+async function getData() {
+  const { data } = await TodoListApi.GetTodoLists();
+  const listItems: {[id: string]: TodoItemType[]} = {};
 
-export default function Home() {
-	const { isLoading, data } = useSWR('/todos/list', fetcher);
-
-  if (isLoading) {
-    return <div>Loading...</div>
+  for (let list of data) {
+    const items = await TodoItemApi.GetTodoItemsByListId(list._id);
+    listItems[list._id] = items.data;
+    items.data.sort((x, y) => (x.order - y.order));
   }
-
-	return <div>
-    {JSON.stringify(data)}
-  </div>;
+  
+  return {
+    todoLists: data,
+    listItems
+  }
 }
-
-const fetcher = () => fetch("http://localhost:3001/todos/list").then((x) => x.json())
+export default async function Home() {
+  const data = await getData();
+  
+	return (
+		<div>
+			<KanbanBoard list={data.todoLists} todoItems={data.listItems} />
+		</div>
+	);
+}

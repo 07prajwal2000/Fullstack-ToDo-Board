@@ -31,21 +31,46 @@ export default class TodoListServices {
 		try {
 			const response = await this.todoListCollection.updateOne(
 				{ name: dto.name },
-				{ $set: data },
-				{ upsert: true }
+				{ $set: data }
 			);
 			response.upsertedId && (data._id = response.upsertedId);
 
 			return {
 				data: data,
-				message: `successfully ${
-					response.matchedCount > 0 ? "updated" : "inserted"
-				}`,
+				message: `successfully inserted`,
 				success: true,
 			};
 		} catch (_) {
 			return {
 				message: "failed to insert",
+			};
+		}
+	}
+
+	public async UpdateTodoList(
+		dto: AddTodoListDto,
+		id: ObjectId
+	): Promise<ApiResponse<TodoListType>> {
+		const data: TodoListType = {
+			name: dto.name,
+      description: dto.description
+		};
+
+		try {
+			const response = await this.todoListCollection.updateOne(
+				{ _id: id },
+				{ $set: data },
+			);
+			response.upsertedId && (data._id = response.upsertedId);
+
+			return {
+				data: data,
+				message: `successfully updated`,
+				success: true,
+			};
+		} catch (_) {
+			return {
+				message: "failed to update",
 			};
 		}
 	}
