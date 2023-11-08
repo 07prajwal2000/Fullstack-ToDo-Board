@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index",
+    "build": "CI=false tsc --build",
     "hotreload": "nodemon --exec npm start --watch ./ -e ts"
   },
   "author": "07prajwal2000",

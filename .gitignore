@@ -3,3 +3,4 @@
 **/.next
 **/.env
 **/package-lock.json
+**/dist
