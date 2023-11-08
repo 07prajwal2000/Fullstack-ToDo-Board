@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import {
 	DragDropContext,
@@ -11,19 +9,34 @@ import {
 import TodoItem from "./TodoItem";
 import { TodoItemType } from "@/types/todoItemType";
 import { Button } from "./ui/button";
-import { PlusCircleIcon, XCircleIcon, PencilIcon } from "lucide-react";
+import {
+	PlusCircleIcon,
+	XCircleIcon,
+	PencilIcon,
+	FrownIcon,
+} from "lucide-react";
 import { ListColumnType, TodoListType } from "@/types/todoListType";
 import TodoListApi from "@/api/todoList";
 import TodoItemApi from "@/api/todoItem";
 import TodoItemDialog from "./TodoItemDialog";
+import { TodoBoardType } from "@/types/todoBoardType";
 
 type KanbanBoardType = {
 	list: TodoListType[];
 	todoItems: { [id: string]: TodoItemType[] };
+	board: TodoBoardType;
+	openNewTodoListDialog: boolean;
+	setOpenNewTodoListDialog: any;
 };
 
-const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
-	const testcolumns = useMemo<ListColumnType>(() => {
+const KanbanBoard: React.FC<KanbanBoardType> = ({
+	list,
+	todoItems,
+	board,
+	openNewTodoListDialog,
+	setOpenNewTodoListDialog,
+}) => {
+	const tempcolumns = useMemo<ListColumnType>(() => {
 		const data: ListColumnType = {};
 		list.forEach((x) => {
 			data[x._id] = {
@@ -33,19 +46,17 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 		});
 		return data;
 	}, []);
+	const boardId = board._id;
+	const [newTodoDialogOpened, setNewTodoDialogOpened] = useState(false);
+	const [newTodoListId, setNewTodoListId] = useState("");
 
-	const [newTodoListDialogOpened, setNewTodoListDialogOpened] =
+	const [editTodoListDialogOpened, setEditTodoListDialogOpened] =
 		useState(false);
-    const [newTodoDialogOpened, setNewTodoDialogOpened] = useState(false);
-    const [newTodoListId, setNewTodoListId] = useState("");
-    
-    const [editTodoListDialogOpened, setEditTodoListDialogOpened] =
-    useState(false);
-    const [editTodoListId, setEditTodoListId] = useState("");
+	const [editTodoListId, setEditTodoListId] = useState("");
 
 	resetServerContext();
 
-	const [columns, setColumns] = useState(testcolumns);
+	const [columns, setColumns] = useState(tempcolumns);
 
 	async function onDragEnd(result: DropResult) {
 		if (!result.destination) return;
@@ -220,36 +231,42 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 	}
 
 	async function editTodoList(name: string, desc: string) {
-
-    if (!editTodoListId || !(name && desc) || !(editTodoListId in columns)) {
-      return;
-    }
-    const list = {name, description: desc};
-    try {
-      await TodoListApi.UpdateTodoList(list, editTodoListId);
-      setColumns(p => {
-        return {...p, [editTodoListId]: {items: p[editTodoListId].items, ...list}};
-      });
-    } catch (error: any) {
-      alert(error?.response?.data?.message || 'Server error');
-    }
-  }
+		if (!editTodoListId || !(editTodoListId in columns)) {
+			return;
+		}
+		const list = { name, description: desc, boardId };
+		try {
+			await TodoListApi.UpdateTodoList(list, editTodoListId);
+			setColumns((p) => {
+				return {
+					...p,
+					[editTodoListId]: {
+						items: p[editTodoListId].items,
+						...list,
+					},
+				};
+			});
+		} catch (error: any) {
+			alert(error?.response?.data?.message || "Server error");
+		}
+	}
 
 	async function addNewColumn(name: string, description: string) {
 		if (!name || !description) return;
-    if (name in columns) {
-      alert(`Todo list with ${name} name already exists`);
-      return;
-    }
+		if (name in columns) {
+			alert(`Todo list with ${name} name already exists`);
+			return;
+		}
 		try {
 			const response = await TodoListApi.InsertTodoList({
 				name,
 				description,
+				boardId,
 			});
 			const newListId = response.data._id;
 			const newCols: ListColumnType = {
 				...columns,
-				[newListId]: { items: [], name, description },
+				[newListId]: { items: [], name, description, boardId },
 			};
 			setColumns(newCols);
 		} catch (error: any) {
@@ -258,21 +275,21 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 		}
 	}
 
-  async function OnTodoItemDelete(id:string, listId: string) {
-    if (!confirm("Are you sure want to delete todo item")) return;
-    try {
-      await TodoItemApi.DeleteTodoItem(id);
-      setColumns(p => {
-        const tempItems = [...p[listId].items].filter(x => x._id != id);
-        return {...p, [listId]: {...p[listId], items: tempItems}}
-      });
-    } catch (error: any) {
-      
-    }
-  }
+	async function OnTodoItemDelete(id: string, listId: string) {
+		if (!confirm("Are you sure want to delete todo item")) return;
+		try {
+			await TodoItemApi.DeleteTodoItem(id);
+			setColumns((p) => {
+				const tempItems = [...p[listId].items].filter(
+					(x) => x._id != id
+				);
+				return { ...p, [listId]: { ...p[listId], items: tempItems } };
+			});
+		} catch (error: any) {}
+	}
 
-	return (
-		<div className="m-0 p-0 max-w-[90vw]">
+	function DndBoard() {
+		return (
 			<div className="flex mx-auto flex-row overflow-x-auto h-[calc(90vh-70px)]">
 				<DragDropContext onDragEnd={onDragEnd}>
 					{Object.entries(columns).map(([columnID, column]) => {
@@ -290,10 +307,12 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 											variant={"ghost"}
 											title="Edit TODO list"
 											size={"sm"}
-											onClick={() =>{
-                        setEditTodoListId(columnID);
-                        setEditTodoListDialogOpened(true);
-                      }}
+											onClick={() => {
+												setEditTodoListId(columnID);
+												setEditTodoListDialogOpened(
+													true
+												);
+											}}
 											className="p-1"
 										>
 											<PencilIcon className="w-4 text-blue-600" />
@@ -357,7 +376,9 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 																	{(p, s) => {
 																		return (
 																			<TodoItem
-                                        onDeleteClicked={OnTodoItemDelete}
+																				onDeleteClicked={
+																					OnTodoItemDelete
+																				}
 																				isDragging={
 																					s.isDragging
 																				}
@@ -401,15 +422,24 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 							</div>
 						);
 					})}
-					<button
-						onClick={() => setNewTodoListDialogOpened(true)}
-						className="border-2 shadow-sm bg-violet-900 text-3xl text-white p-2 rounded-sm hover:bg-violet-800 active:bg-violet-900 transition-colors duration-100 h-[120px]"
-					>
-						+
-					</button>
 				</DragDropContext>
 			</div>
+		);
+	}
 
+	return (
+		<div className="m-0 p-0 max-w-[90vw]">
+			{Object.keys(columns).length > 0 ? (
+				<DndBoard />
+			) : (
+				<div className="flex flex-col my-4 justify-center items-center gap-2">
+					<FrownIcon className="w-16 h-16 text-pink-500" />
+					<h2 className="text-3xl font-bold text-slate-700">
+						Board Items are empty.
+					</h2>
+					<p>Click <span className="font-bold underline">Add New List</span> button to create a new list</p>
+				</div>
+			)}
 			{/* New TODO */}
 			<TodoItemDialog
 				description=""
@@ -426,16 +456,17 @@ const KanbanBoard: React.FC<KanbanBoardType> = ({ list, todoItems }) => {
 				description=""
 				name=""
 				title="New TODO List"
-				open={newTodoListDialogOpened}
-				onOpenChanged={setNewTodoListDialogOpened}
+				open={openNewTodoListDialog}
+				onOpenChanged={setOpenNewTodoListDialog}
 				onDoneClicked={addNewColumn}
 			/>
 
 			{/* Edit List */}
 			<TodoItemDialog
-				description={columns[editTodoListId]?.description || ''}
-				name={columns[editTodoListId]?.name || ''}
+				description={columns[editTodoListId]?.description || ""}
+				name={columns[editTodoListId]?.name || ""}
 				title="Edit TODO List"
+				editing
 				open={editTodoListDialogOpened}
 				onOpenChanged={setEditTodoListDialogOpened}
 				onDoneClicked={editTodoList}

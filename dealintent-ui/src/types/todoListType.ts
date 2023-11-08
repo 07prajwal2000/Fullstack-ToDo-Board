@@ -4,17 +4,20 @@ export type TodoListType = {
   _id: string;
   name: string;
   description: string;
+  boardId: string;
 };
 
 export type UpsertTodoListRequestType = {
   name: string;
   description: string;
+  boardId: string;
 }
 
 export type ListColumnType = {
   [id: string]: {
     name: string;
     description: string;
+    boardId: string;
     items: TodoItemType[];
   }
 };

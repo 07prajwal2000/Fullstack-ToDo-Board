@@ -30,8 +30,8 @@ export default function TodoItemDialog(props: TodoItemDialogType) {
 	const [desc, setDesc] = useState(props.description);
 
 	useEffect(() => {
-		!props.editing && setName(props.name);
-		!props.editing && setDesc(props.description);
+		props.editing && setName(props.name);
+		props.editing && setDesc(props.description);
 	}, [props.open]);
 
 	return (

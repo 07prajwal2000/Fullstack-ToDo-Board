@@ -5,35 +5,44 @@ import {
 	TodoListType,
 } from "../models/todoListModel";
 import TodoItem from "../models/todoItemModel";
+import TodoBoardType from "../models/todoBoardModel";
 
 export default class TodoListServices {
 	private itemsCollection: Collection<TodoItem>;
 	private todoListCollection: Collection<TodoListType>;
+	private boardCollection: Collection<TodoBoardType>;
 
-  constructor(itemsCollection: Collection<TodoItem>, todoListCollection: Collection<TodoListType>) {
+  constructor(itemsCollection: Collection<TodoItem>, todoListCollection: Collection<TodoListType>, boardCollection: Collection<TodoBoardType>) {
     this.itemsCollection = itemsCollection;
     this.todoListCollection = todoListCollection;
+		this.boardCollection = boardCollection;
   }
 
-	public async GetTodoLists(): Promise<ApiResponse<Array<TodoListType>>> {
-		const result = await this.todoListCollection.find().toArray();
-		return { data: result, message: "", success: true };
+	public async GetTodoLists(boardId: ObjectId): Promise<ApiResponse<Array<TodoListType>>> {
+		if (! await this.BoardExists(boardId)) return {message: 'Board not found'};
+		
+		try {
+			const result = await this.todoListCollection.find({boardId}).toArray();
+			return { data: result, message: "", success: true };
+		} catch (_) {
+			return {message: 'Failed to get boards'};
+		}
 	}
 
 	public async AddTodoList(
 		dto: AddTodoListDto
 	): Promise<ApiResponse<TodoListType>> {
+		
 		const data: TodoListType = {
 			name: dto.name,
-      description: dto.description
+      description: dto.description,
+			boardId: new ObjectId(dto.boardId)
 		};
+		if (! await this.BoardExists(data.boardId)) return {message: 'Board not found'};
 
 		try {
-			const response = await this.todoListCollection.updateOne(
-				{ name: dto.name },
-				{ $set: data }
-			);
-			response.upsertedId && (data._id = response.upsertedId);
+			const response = await this.todoListCollection.insertOne(data);
+			data._id = response.insertedId;
 
 			return {
 				data: data,
@@ -53,9 +62,10 @@ export default class TodoListServices {
 	): Promise<ApiResponse<TodoListType>> {
 		const data: TodoListType = {
 			name: dto.name,
-      description: dto.description
+      description: dto.description,
+			boardId: new ObjectId(dto.boardId)
 		};
-
+		if (! await this.BoardExists(data.boardId)) return {message: 'Board not found'};
 		try {
 			const response = await this.todoListCollection.updateOne(
 				{ _id: id },
@@ -93,4 +103,13 @@ export default class TodoListServices {
       }
     }
   }
+
+	public async BoardExists(id: ObjectId): Promise<boolean> {
+		try {
+			const response = await this.boardCollection.findOne({ _id: id });
+			return response ? true : false;
+		} catch (error) {
+			return false;
+		}
+	}
 }

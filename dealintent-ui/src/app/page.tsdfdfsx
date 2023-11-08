@@ -1,0 +1,51 @@
+// import TodoBoardApi from "@/api/todoBoard";
+// import { BoardDialog } from "@/components/BoardItem";
+// import Navbar from "@/components/Navbar";
+// import TodoBoardGrid from "@/components/TodoBoardGrid";
+// import { Button } from "@/components/ui/button";
+// import { TodoBoardType } from "@/types/todoBoardType";
+// import ApiResponse from "@/types/todoListType";
+// import { TableIcon } from "lucide-react";
+
+// async function getData(): Promise<ApiResponse<TodoBoardType[]> | null> {
+// 	try {
+// 		const data = await TodoBoardApi.GetTodoBoard();
+// 		return data;
+// 	} catch (e: any) {
+// 		return e?.response?.data;
+// 	}
+// }
+
+// export default async function Home() {
+// 	const data = await getData();
+// 	if (!data || !data.success) {
+// 		return (
+// 			<div>
+// 				<h2 className="text-center text-red-400">
+// 					{data?.message || "Server error"}
+// 				</h2>
+// 			</div>
+// 		);
+// 	}
+
+//   function onModalClose(name: string, description: string) {
+    
+//   }
+  
+// 	return (
+// 		<div>
+// 			<Navbar
+// 				children={
+// 					<div>
+// 						<BoardDialog title='Add New Board' onDoneClicked={onModalClose}>
+//               <Button size={"sm"} variant={"outline"}>
+//                 <TableIcon className="w-6 mr-1" /> Add New Board
+//               </Button>
+//             </BoardDialog>
+// 					</div>
+// 				}
+// 			/>
+// 			<TodoBoardGrid data={data.data} />
+// 		</div>
+// 	);
+// }

@@ -13,28 +13,45 @@ import TodoItem, {
 	TodoItemDtoValidator,
 } from "../models/todoItemModel";
 import TodoItemServices from "../services/todoItemServices";
+import TodoBoardServices from "../services/todoBoardServices";
+import TodoBoardType, {
+	CreateTodoBoardDtoValidator,
+} from "../models/todoBoardModel";
 
 let todoListServices: TodoListServices;
 let todoItemServices: TodoItemServices;
+let todoBoardServices: TodoBoardServices;
 
 export default function MapTodosController(app: Express, client: MongoClient) {
 	const mongoClient = client;
 	const database = mongoClient.db(GetEnv("MONGO_DBNAME"));
 
-	const todoBoardCollection =
-		database.collection<TodoListType>("TODO_BOARDS");
+	const todoListCollection = database.collection<TodoListType>("TODO_LIST");
 	const todosCollection = database.collection<TodoItem>("TODOS");
+	const todoBoardCollection =
+		database.collection<TodoBoardType>("TODOS_BOARD");
 
 	todoListServices = new TodoListServices(
 		todosCollection,
+		todoListCollection,
 		todoBoardCollection
 	);
 	todoItemServices = new TodoItemServices(
 		todosCollection,
-		todoBoardCollection
+		todoListCollection
+	);
+	todoBoardServices = new TodoBoardServices(
+		todoBoardCollection,
+		todoListServices
 	);
 
-	app.get("/todos/list", getTodoLists);
+	app.get("/todos/board/:boardid", getBoardById);
+	app.get("/todos/board", getAllBoards);
+	app.post("/todos/board", createTodoBoard);
+	app.put("/todos/board", updateTodoBoard); // boardid=
+	app.delete("/todos/board", deleteTodoBoard); // boardid=
+
+	app.get("/todos/list", getTodoLists); // ?boardid=
 	app.post("/todos/list", addTodoList);
 	app.put("/todos/list", updateTodoList); // ?id=
 	app.delete("/todos/list", deleteTodoList); // ?id=
@@ -45,8 +62,78 @@ export default function MapTodosController(app: Express, client: MongoClient) {
 	app.delete("/todos/item", DeleteTodoItem); // ?id=
 }
 
+// board handlers
+async function getAllBoards(_: Request, response: Response) {
+	const data = await todoBoardServices.GetBoards();
+	response.status(data.success ? 200 : 400).json(data);
+}
+
+async function getBoardById(req: Request, response: Response) {
+	const idAsStr = req.params["boardid"];
+
+	if (!ObjectId.isValid(idAsStr)) {
+		response.status(400).json({ message: "Invalid id" });
+		return;
+	}
+	const id = new ObjectId(idAsStr);
+	const data = await todoBoardServices.GetBoardById(id);
+	response.status(data.success ? 200 : 400).json(data);
+}
+
+async function createTodoBoard(request: Request, response: Response) {
+	const dto = request.body;
+	if (!CreateTodoBoardDtoValidator.safeParse(dto)) {
+		response.status(400).json({
+			message: "Invalid data",
+		});
+		return;
+	}
+	const data = await todoBoardServices.CreateTodoBoards(dto);
+	response.status(data.success ? 200 : 400).json(data);
+}
+
+async function updateTodoBoard(request: Request, response: Response) {
+	const id = request.query["boardid"]?.toString() || "";
+	if (!ObjectId.isValid(id)) {
+		response.status(400).json({ message: "Invalid Board ID" });
+		return;
+	}
+
+	const dto = request.body;
+	if (!CreateTodoBoardDtoValidator.safeParse(dto)) {
+		response.status(400).json({
+			message: "Invalid data",
+		});
+		return;
+	}
+
+	const data = await todoBoardServices.UpdateTodoBoards(
+		new ObjectId(id),
+		dto
+	);
+	response.status(data.success ? 200 : 400).json(data);
+}
+
+async function deleteTodoBoard(request: Request, response: Response) {
+	const id = request.query["boardid"]?.toString() || "";
+	if (!ObjectId.isValid(id)) {
+		response.status(400).json({ message: "Invalid Board ID" });
+		return;
+	}
+
+	const data = await todoBoardServices.DeleteBoard(new ObjectId(id));
+	response.status(data.success ? 200 : 400).json(data);
+}
+
+// list handlers
 async function getTodoLists(request: Request, response: Response) {
-	const data = await todoListServices.GetTodoLists();
+	const id = request.query["boardid"]?.toString() || "";
+	if (!ObjectId.isValid(id)) {
+		response.status(400).json({ message: "Invalid Board ID" });
+		return;
+	}
+
+	const data = await todoListServices.GetTodoLists(new ObjectId(id));
 
 	response.json(data);
 }

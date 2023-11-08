@@ -5,8 +5,8 @@ export default class TodoListApi {
 	private static endpointUrl = "/todos/list";
   public static TODO_LIST_SWR_KEY = this.endpointUrl;
   
-	public static async GetTodoLists(): Promise<ApiResponse<TodoListType[]>> {
-		const response = await GetFetcher(this.endpointUrl);
+	public static async GetTodoLists(boardId: string): Promise<ApiResponse<TodoListType[]>> {
+		const response = await GetFetcher(this.endpointUrl + "?boardid=" + boardId);
 		return response.data;
 	}
 
