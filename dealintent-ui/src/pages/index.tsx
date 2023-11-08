@@ -70,15 +70,14 @@ export default function Home(data: ApiResponse<TodoBoardType[]> | null) {
 								<TableIcon className="w-6 mr-1" /> Add New Board
 							</Button>
 						</BoardDialog>
+						<div className="absolute flex flex-row items-center justify-center bottom-0 right-0 p-4 text-sm gap-2 text-slate-500">
+							<a href="https://github.com/07prajwal2000/Dealintent-Assignment" className="p-1 rounded-md bg-blue-200" target="_blank"><GithubIcon /></a>
+							<p className="">Developed by Prajwal</p>
+						</div>
 					</div>
 				}
 			/>
 			<TodoBoardGrid data={boards} />
-
-			<div className="absolute flex flex-row items-center justify-center bottom-0 right-0 p-4 text-sm gap-2 text-slate-500">
-				<a href="https://github.com/07prajwal2000/Dealintent-Assignment" className="p-1 rounded-md bg-blue-200" target="_blank"><GithubIcon /></a>
-				<p className="">Developed by Prajwal</p>
-			</div>
 		</div>
 	);
 }
