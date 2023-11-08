@@ -8,6 +8,22 @@ import TodoListServices from "./todoListServices";
 export default class TodoBoardServices {
 	private collection: Collection<TodoBoardType>;
 	private todoListServices: TodoListServices;
+
+	private defaultListItems = [
+		{
+			name: 'ToDo',
+			description: 'The TODO Items'
+		},
+		{
+			name: 'In Progress',
+			description: 'The In-Progress Items'
+		},
+		{
+			name: 'Completed',
+			description: 'The Completed Items'
+		},
+	];
+	
 	constructor(
 		collection: Collection<TodoBoardType>,
 		todoListServices: TodoListServices
@@ -54,7 +70,15 @@ export default class TodoBoardServices {
 		try {
 			const data: TodoBoardType = { ...dto };
 			const response = await this.collection.insertOne(data);
+			const proms = [];
+			for (let list of this.defaultListItems) {
+				proms.push(this.todoListServices.AddTodoList({
+					...list,
+					boardId: response.insertedId.toString()
+				}))
+			}
 			data._id = response.insertedId;
+			await Promise.all(proms);
 			return {
 				data,
 				message: "Successfully added",
