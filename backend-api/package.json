@@ -1,7 +1,7 @@
 {
-  "name": "dealintent-api",
+  "name": "backend-api",
   "version": "1.0.0",
-  "description": "Dealintent backend server written in express",
+  "description": "backend server written in express",
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index",
